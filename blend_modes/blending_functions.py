@@ -515,6 +515,26 @@ def multiply(img_in, img_layer, opacity, disable_type_checks: bool = False):
     return img_out * 255.0
 
 
+def color_burn(img_in, img_layer, opacity, disable_type_checks: bool = False):
+    if not disable_type_checks:
+        _fcn_name = 'color_burn'
+        assert_image_format(img_in, _fcn_name, 'img_in')
+        assert_image_format(img_layer, _fcn_name, 'img_layer')
+        assert_opacity(opacity, _fcn_name)
+
+    img_in_norm = img_in / 255.0
+    img_layer_norm = img_layer / 255.0
+
+    ratio = _compose_alpha(img_in_norm, img_layer_norm, opacity)
+
+    comp = np.clip(1.0 - (1.0 - img_in_norm[:, :, :3])/img_layer_norm[:, :, :3], 0.0, 1.0)
+
+    ratio_rs = np.reshape(np.repeat(ratio, 3), [comp.shape[0], comp.shape[1], comp.shape[2]])
+    img_out = comp * ratio_rs + img_in_norm[:, :, :3] * (1.0 - ratio_rs)
+    img_out = np.nan_to_num(np.dstack((img_out, img_in_norm[:, :, 3])))  # add alpha channel and replace nans
+    return img_out * 255.0
+
+
 def hard_light(img_in, img_layer, opacity, disable_type_checks: bool = False):
     """Apply hard light blending mode of a layer on an image.
 
